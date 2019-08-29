@@ -1,0 +1,42 @@
+{
+  "variables": {
+    "hcloud_token": "{{env `HCLOUD_TOKEN`}}"
+  },
+  "builders": [
+    {
+      "type": "hcloud",
+      "token": "{{user `hcloud_token`}}",
+      "image": "ubuntu-18.04",
+      "location": "nbg1",
+      "ssh_username": "root",
+      "server_type": "cx11",
+      "snapshot_name": "wg-vpn-packer-{{isotime}}",
+      "snapshot_labels": {
+        "build_date": "{{isotime \"2006-01-02\"}}"
+      } 
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": ["sudo mkdir /packer-tmp", "sudo chmod 777 /packer-tmp"]
+    },
+    {
+      "type": "file",
+      "source": "./provision-files",
+      "destination": "/packer-tmp"
+    },
+    {
+      "type": "shell",
+      "execute_command": "sudo -S sh -c '{{.Vars}} {{.Path}}'",
+      "script": "./provision-scripts/os-upgrade.sh",
+      "expect_disconnect": true
+    },
+    {
+      "type": "shell",
+      "execute_command": "sudo -S sh -c '{{.Vars}} {{.Path}}'",
+      "script": "./provision-scripts/wg-setup.sh",
+      "pause_before": "60s"
+    }
+  ]
+}
